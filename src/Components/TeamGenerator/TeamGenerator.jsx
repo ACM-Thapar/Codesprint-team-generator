@@ -16,7 +16,9 @@ const TeamGenerator = () => {
   const handleCsvParsed = result => {
     // Check if the CSV contains the required columns
     const requiredColumns = ['name', 'department', 'role'];
-    const csvColumns = result.meta.fields;
+    const csvColumns = result.meta.fields.map (col =>
+      col.toLowerCase ().trim ()
+    );
     const isValidCsv = requiredColumns.every (col => csvColumns.includes (col));
 
     if (!isValidCsv) {
@@ -26,33 +28,54 @@ const TeamGenerator = () => {
       return;
     }
 
-    // Parse the CSV data to JSON
-    const data = result.data;
+    // Parse the CSV data to JSON and filter out invalid rows
+    const data = result.data.filter (item =>
+      Object.values (item).every (
+        value => value !== undefined && value !== null && value.trim () !== ''
+      )
+    );
+    console.log ('Data after filtering:', data); // Debugging
+
     const parsedData = data.map (item => ({
-      name: item.name,
-      department: item.department,
-      role: item.role,
+      name: item.name.trim (),
+      department: item.department.trim (),
+      role: item.role.trim (),
     }));
+    console.log ('Parsed data:', parsedData); // Debugging
 
     // Generate teams
     const teams = generateTeams (parsedData);
+    console.log ('Generated teams:', teams); // Debugging
     setTeams (teams);
   };
 
   const generateTeams = members => {
-    const shuffledMembers = _.shuffle (members);
-    const teamSize = 3; // Change this to set the desired team size
-    const teams = _.chunk (shuffledMembers, teamSize);
+    // Separate team leaders and regular members
+    const leaders = members.filter (member => member.role === 'team leader');
+    const regularMembers = members.filter (member => member.role === 'member');
 
-    teams.forEach (team => {
-      let hasLeader = false;
-      team.forEach (member => {
-        if (member.role === 'team leader' && !hasLeader) {
-          hasLeader = true;
-        } else {
-          member.role = 'member';
-        }
-      });
+    // Shuffle team leaders and regular members
+    const shuffledLeaders = _.shuffle (leaders);
+    const shuffledRegularMembers = _.shuffle (regularMembers);
+
+    const teamSize = 3; // Change this to set the desired team size
+    const numTeams = Math.ceil (members.length / teamSize);
+    const teams = Array.from ({length: numTeams}, () => []);
+    let currentIndex = 0;
+
+    // Assign team leaders to each team
+    shuffledLeaders.forEach (leader => {
+      teams[currentIndex].push (leader);
+      currentIndex = (currentIndex + 1) % numTeams;
+    });
+
+    // Distribute regular members evenly across teams
+    shuffledRegularMembers.forEach (member => {
+      if (teams[currentIndex].length >= teamSize) {
+        currentIndex = (currentIndex + 1) % numTeams;
+      }
+      teams[currentIndex].push (member);
+      currentIndex = (currentIndex + 1) % numTeams;
     });
 
     return teams;
