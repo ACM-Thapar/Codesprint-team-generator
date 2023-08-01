@@ -5,6 +5,7 @@ import _ from 'lodash';
 const TeamGenerator = () => {
   const [teams, setTeams] = useState ([]);
   const [error, setError] = useState (null);
+  const [teamSize, setTeamSizeInput] = useState ('');
 
   const handleFileChange = e => {
     const file = e.target.files[0];
@@ -47,6 +48,14 @@ const TeamGenerator = () => {
 
     console.log ('Parsed data:', parsedData); // Debugging
 
+    const numTeams = Math.ceil (parsedData.length / teamSize);
+    const numTeamLeaders = countTeamLeaders (parsedData);
+
+    if (numTeams !== numTeamLeaders) {
+      setError ('Number of teams does not match the number of team leaders.');
+      return;
+    }
+
     // Generate teams
     const teams = generateTeams (parsedData);
     console.log ('Generated teams:', teams); // Debugging
@@ -71,6 +80,10 @@ const TeamGenerator = () => {
     return teams;
   };
 
+  const countTeamLeaders = members => {
+    return members.filter (member => member.role === 'team leader').length;
+  };
+
   const generateSingleSetOfTeams = members => {
     // Separate team leaders and regular members
     const leaders = members.filter (member => member.role === 'team leader');
@@ -80,7 +93,7 @@ const TeamGenerator = () => {
     const shuffledLeaders = _.shuffle (leaders);
     const shuffledRegularMembers = _.shuffle (regularMembers);
 
-    const teamSize = 3; // Change this to set the desired team size
+    // Change this to set the desired team size
     const numTeams = Math.ceil (members.length / teamSize);
     const teams = Array.from ({length: numTeams}, () => []);
 
@@ -143,6 +156,17 @@ const TeamGenerator = () => {
 
   return (
     <div>
+      <label htmlFor="">
+        Team Size:
+        {' '}
+        <input
+          type="number"
+          name=""
+          id=""
+          value={teamSize}
+          onChange={e => setTeamSizeInput (e.target.value)}
+        />
+      </label>
       <input type="file" onChange={handleFileChange} />
       {error && <div style={{color: 'red'}}>{error}</div>}
       {teams.map ((team, index) => (
