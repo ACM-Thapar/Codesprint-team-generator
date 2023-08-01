@@ -4,6 +4,7 @@ import _ from 'lodash';
 
 const TeamGenerator = () => {
   const [teams, setTeams] = useState ([]);
+  const [error, setError] = useState (null);
 
   const handleFileChange = e => {
     const file = e.target.files[0];
@@ -22,7 +23,7 @@ const TeamGenerator = () => {
     const isValidCsv = requiredColumns.every (col => csvColumns.includes (col));
 
     if (!isValidCsv) {
-      alert (
+      setError (
         'Invalid CSV file. Please make sure it contains columns: name, department, role.'
       );
       return;
@@ -41,6 +42,9 @@ const TeamGenerator = () => {
       department: item.department.trim (),
       role: item.role.trim (),
     }));
+
+    setError (null);
+
     console.log ('Parsed data:', parsedData); // Debugging
 
     // Generate teams
@@ -140,6 +144,7 @@ const TeamGenerator = () => {
   return (
     <div>
       <input type="file" onChange={handleFileChange} />
+      {error && <div style={{color: 'red'}}>{error}</div>}
       {teams.map ((team, index) => (
         <div key={index}>
           <h2>Team {index + 1}</h2>
