@@ -1,6 +1,7 @@
 import {useState} from 'react';
 import Papa from 'papaparse';
 import _ from 'lodash';
+import SampleCsv from '../SampleCsv/SampleCsv';
 
 const TeamGenerator = () => {
   const [teams, setTeams] = useState ([]);
@@ -15,7 +16,6 @@ const TeamGenerator = () => {
   };
 
   const handleCsvParsed = result => {
-    // Check if the CSV contains the required columns
     const requiredColumns = ['name', 'department', 'role'];
     const csvColumns = result.meta.fields.map (col =>
       col.toLowerCase ().trim ()
@@ -29,13 +29,12 @@ const TeamGenerator = () => {
       return;
     }
 
-    // Parse the CSV data to JSON and filter out invalid rows
     const data = result.data.filter (item =>
       Object.values (item).every (
         value => value !== undefined && value !== null && value.trim () !== ''
       )
     );
-    console.log ('Data after filtering:', data); // Debugging
+    console.log ('Data after filtering:', data);
 
     const parsedData = data.map (item => ({
       name: item.name.trim (),
@@ -45,7 +44,7 @@ const TeamGenerator = () => {
 
     setError (null);
 
-    console.log ('Parsed data:', parsedData); // Debugging
+    console.log ('Parsed data:', parsedData);
 
     const numTeams = countTeamLeaders (parsedData);
 
@@ -55,7 +54,6 @@ const TeamGenerator = () => {
       return;
     }
 
-    // Calculate the team size based on the number of members and team leaders
     const calculatedTeamSize = Math.ceil (parsedData.length / numTeams);
 
     if (calculatedTeamSize <= 0) {
@@ -64,9 +62,8 @@ const TeamGenerator = () => {
       return;
     }
 
-    // Generate teams
     const teams = generateTeams (parsedData, calculatedTeamSize);
-    console.log ('Generated teams:', teams); // Debugging
+    console.log ('Generated teams:', teams);
     setTeams (teams);
   };
 
@@ -93,37 +90,30 @@ const TeamGenerator = () => {
   };
 
   const generateSingleSetOfTeams = (members, size) => {
-    // Separate team leaders and regular members
     const leaders = members.filter (member => member.role === 'team leader');
     const regularMembers = members.filter (member => member.role === 'member');
 
-    // Shuffle team leaders and regular members separately
     const shuffledLeaders = _.shuffle (leaders);
     const shuffledRegularMembers = _.shuffle (regularMembers);
 
-    // Change this to set the desired team size
     const numTeams = Math.ceil (members.length / size);
     const teams = Array.from ({length: numTeams}, () => []);
 
-    // Distribute team leaders across teams, ensuring one leader per team
     for (let i = 0; i < numTeams; i++) {
       if (shuffledLeaders.length > 0) {
         teams[i].push (shuffledLeaders.pop ());
       }
     }
 
-    // Group regular members by department
     const regularMembersByDepartment = _.groupBy (
       shuffledRegularMembers,
       'department'
     );
 
-    // Calculate the maximum number of members each department can have in a team
     const maxMembersPerDepartment = Math.floor (
       shuffledRegularMembers.length / numTeams
     );
 
-    // Distribute regular members evenly across teams, considering the department of the team leader
     let teamIndex = 0;
     for (const department of Object.keys (regularMembersByDepartment)) {
       const departmentMembers = regularMembersByDepartment[department];
@@ -136,7 +126,6 @@ const TeamGenerator = () => {
         teams[teamIndex].push (member);
         teamIndex = (teamIndex + 1) % numTeams;
 
-        // To avoid adding too many members from the same department to a team
         if (
           teams[teamIndex].length < maxMembersPerDepartment &&
           departmentMembers.length === 0
@@ -165,6 +154,7 @@ const TeamGenerator = () => {
   return (
     <div>
       <input type="file" onChange={handleFileChange} />
+      <SampleCsv />
       {error && <div style={{color: 'red'}}>{error}</div>}
       {teams.map ((team, index) => (
         <div key={index}>
