@@ -5,7 +5,6 @@ import _ from 'lodash';
 const TeamGenerator = () => {
   const [teams, setTeams] = useState ([]);
   const [error, setError] = useState (null);
-  const [teamSize, setTeamSizeInput] = useState ('');
 
   const handleFileChange = e => {
     const file = e.target.files[0];
@@ -48,28 +47,37 @@ const TeamGenerator = () => {
 
     console.log ('Parsed data:', parsedData); // Debugging
 
-    const numTeams = Math.ceil (parsedData.length / teamSize);
-    const numTeamLeaders = countTeamLeaders (parsedData);
+    const numTeams = countTeamLeaders (parsedData);
 
-    if (numTeams !== numTeamLeaders) {
-      setError ('Number of teams does not match the number of team leaders.');
+    if (numTeams === 0) {
+      setError ('No team leaders found in the CSV data.');
+      setTeams ([]);
+      return;
+    }
+
+    // Calculate the team size based on the number of members and team leaders
+    const calculatedTeamSize = Math.ceil (parsedData.length / numTeams);
+
+    if (calculatedTeamSize <= 0) {
+      setError ('Unable to determine a valid team size with the given data.');
+      setTeams ([]);
       return;
     }
 
     // Generate teams
-    const teams = generateTeams (parsedData);
+    const teams = generateTeams (parsedData, calculatedTeamSize);
     console.log ('Generated teams:', teams); // Debugging
     setTeams (teams);
   };
 
-  const generateTeams = members => {
+  const generateTeams = (members, size) => {
     let isUniform = false;
     let attempts = 0;
     let teams;
 
     while (!isUniform) {
       attempts++;
-      teams = generateSingleSetOfTeams (members);
+      teams = generateSingleSetOfTeams (members, size);
       isUniform = checkUniformDistribution (teams);
     }
 
@@ -84,7 +92,7 @@ const TeamGenerator = () => {
     return members.filter (member => member.role === 'team leader').length;
   };
 
-  const generateSingleSetOfTeams = members => {
+  const generateSingleSetOfTeams = (members, size) => {
     // Separate team leaders and regular members
     const leaders = members.filter (member => member.role === 'team leader');
     const regularMembers = members.filter (member => member.role === 'member');
@@ -94,7 +102,7 @@ const TeamGenerator = () => {
     const shuffledRegularMembers = _.shuffle (regularMembers);
 
     // Change this to set the desired team size
-    const numTeams = Math.ceil (members.length / teamSize);
+    const numTeams = Math.ceil (members.length / size);
     const teams = Array.from ({length: numTeams}, () => []);
 
     // Distribute team leaders across teams, ensuring one leader per team
@@ -120,7 +128,7 @@ const TeamGenerator = () => {
     for (const department of Object.keys (regularMembersByDepartment)) {
       const departmentMembers = regularMembersByDepartment[department];
       while (departmentMembers.length > 0) {
-        if (teams[teamIndex].length >= teamSize) {
+        if (teams[teamIndex].length >= size) {
           teamIndex = (teamIndex + 1) % numTeams;
         }
 
@@ -156,17 +164,6 @@ const TeamGenerator = () => {
 
   return (
     <div>
-      <label htmlFor="">
-        Team Size:
-        {' '}
-        <input
-          type="number"
-          name=""
-          id=""
-          value={teamSize}
-          onChange={e => setTeamSizeInput (e.target.value)}
-        />
-      </label>
       <input type="file" onChange={handleFileChange} />
       {error && <div style={{color: 'red'}}>{error}</div>}
       {teams.map ((team, index) => (
